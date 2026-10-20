@@ -14,8 +14,10 @@ from .query import parse_query, QueryError
 from .rendering import render_history_chart, format_price_summary, format_candidates, candidate_kind
 from .storage import Store
 from .names import alias_map, normalize_name, name_rank
+from .steam import _log_name_failure
 
 UTC = timezone.utc
+_NAME_ERRORS = (ITADError, OSError, TimeoutError, ValueError, aiohttp.ClientError)
 
 
 def iso(seconds: float) -> str:
@@ -36,12 +38,14 @@ def signature(deal):
 
 
 class PriceService:
-    def __init__(self, client, steam, store: Store, data_dir, config=None, clock=time.time):
+    def __init__(self, client, steam, store: Store, data_dir, config=None, clock=time.time,
+                 diagnostic_logger=None):
         self.client, self.steam, self.store = client, steam, store
         self.directory = Path(data_dir)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.config = config or {}
         self.clock = clock
+        self.diagnostic_logger = diagnostic_logger
         self.active_seconds = max(1, int(self.config.get('active_days', 3))) * 86400
         self.cache_seconds = max(1, int(self.config.get('cache_hours', 24))) * 3600
         self.flights = {}
@@ -91,11 +95,18 @@ class PriceService:
         self.store.cache_put('info:' + ident, info, self.clock() + 86400)
         return info
 
+    async def _name_call(self, stage, factory):
+        try:
+            return await factory()
+        except _NAME_ERRORS as exc:
+            _log_name_failure(stage, exc, self.diagnostic_logger)
+            raise
+
     async def _appid_candidate(self, appid, localized=None, verified_type=None):
-        item = await self.client.lookup_appid(appid)
+        item = await self._name_call('appid_lookup', lambda: self.client.lookup_appid(appid))
         if not item:
             return None
-        details = await self.info(item['id'])
+        details = await self._name_call('metadata_info', lambda: self.info(item['id']))
         # AppID lookup must resolve to this precise Steam product, not an edition
         # or an unrelated game that happens to have the same name.
         if str(details.get('appid')) != str(appid):
@@ -103,9 +114,12 @@ class PriceService:
         kind = details.get('type') or item.get('type')
         if kind in {None, '', 'unknown'}:
             if verified_type is None and hasattr(self.steam, 'app_details'):
-                steam_info = await self.steam.app_details(appid)
-                if not steam_info:
-                    raise OSError('Steam 条目核验暂不可用。')
+                async def verify_type():
+                    steam_info = await self.steam.app_details(appid)
+                    if not steam_info:
+                        raise OSError('Steam 条目核验暂不可用。')
+                    return steam_info
+                steam_info = await self._name_call('steam_type_verify', verify_type)
                 verified_type = steam_info.get('type')
             kind = verified_type
         if kind not in {'game', 'dlc'}:
@@ -128,7 +142,7 @@ class PriceService:
         cached = self.store.cache_get(key, self.clock())
         if cached is None:
             candidates, errors = [], []
-            recoverable = (ITADError, OSError, TimeoutError, ValueError, aiohttp.ClientError)
+            recoverable = _NAME_ERRORS
             if query.appid or alias_ids:
                 for appid in ([query.appid] if query.appid else alias_ids):
                     try:
@@ -141,12 +155,12 @@ class PriceService:
                 # English ITAD lookup remains useful even if the localized
                 # storefront index omits a product. Failures are independent.
                 try:
-                    candidates = await self.client.search(normalized)
+                    candidates = await self._name_call('itad_search', lambda: self.client.search(normalized))
                 except recoverable as exc:
                     errors.append(exc)
                 if hasattr(self.steam, 'search'):
                     try:
-                        localized = await self.steam.search(normalized)
+                        localized = await self._name_call('steam_search', lambda: self.steam.search(normalized))
                         if getattr(localized, 'incomplete', False):
                             errors.append(OSError('Steam 部分条目核验暂不可用。'))
                     except recoverable as exc:
@@ -173,14 +187,15 @@ class PriceService:
             shop_ids = {}
             if unknown and hasattr(self.client, 'shop_ids'):
                 try:
-                    shop_ids = await self.client.shop_ids([c['id'] for c in unknown])
+                    shop_ids = await self._name_call('shop_id_lookup',
+                        lambda: self.client.shop_ids([c['id'] for c in unknown]))
                 except recoverable as exc:
                     errors.append(exc)
             for candidate in unknown:
                 candidate['shop_ids'] = shop_ids.get(candidate['id'], [])
                 if candidate_kind(candidate) == 'unknown':
                     try:
-                        details = await self.info(candidate['id'])
+                        details = await self._name_call('metadata_info', lambda: self.info(candidate['id']))
                         candidate.update({k: details[k] for k in ('type', 'appid') if details.get(k) is not None})
                     except recoverable as exc:
                         errors.append(exc)
@@ -194,13 +209,13 @@ class PriceService:
                 if (candidate_kind(candidate) == 'game' and not candidate.get('appid')
                         and title_counts[normalize_name(candidate.get('title', ''))] > 1):
                     try:
-                        details = await self.info(candidate['id'])
+                        details = await self._name_call('metadata_info', lambda: self.info(candidate['id']))
                         candidate.update({k: details[k] for k in ('appid', 'type') if details.get(k) is not None})
                     except recoverable as exc:
                         errors.append(exc)
             if not candidates:
                 if errors:
-                    raise QueryError('名称查询服务暂不可用，未把网络错误当作“找不到”。请稍后重试或输入 Steam AppID。')
+                    raise QueryError('名称查询服务暂不可用，未将服务异常当作“找不到”。请稍后重试或输入 Steam AppID。')
                 raise QueryError('未找到该游戏，请检查名称或输入 Steam 商店链接。')
             cached = candidates
             # Do not retain incomplete backend results for a full day.
@@ -210,7 +225,7 @@ class PriceService:
         if not games:
             raise QueryError('未找到已确认的游戏本体，请输入 Steam AppID 或 /app/ 链接。\n\n' + format_candidates(cached))
         selected = games[0]
-        base = dict(await self.info(selected['id']))
+        base = dict(await self._name_call('metadata_info', lambda: self.info(selected['id'])))
         if selected.get('localized_title'):
             base['title'] = selected['localized_title']
         return base, [c for c in cached if c['id'] != selected['id']]

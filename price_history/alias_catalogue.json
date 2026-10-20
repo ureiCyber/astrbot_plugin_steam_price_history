@@ -1,0 +1,880 @@
+{
+  "schema_version": 1,
+  "description": "人工维护的精确别名和官方 Steam 身份核对记录。只用于名称解析，不代表价格、可购买地区或语言承诺。",
+  "apps": {
+    "251150": {
+      "appid": 251150,
+      "title": "The Legend of Heroes: Trails in the Sky",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=251150&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "251290": {
+      "appid": 251290,
+      "title": "The Legend of Heroes: Trails in the Sky SC",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=251290&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "316720": {
+      "appid": 316720,
+      "title": "planetarian ~the reverie of a little planet~",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=316720&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "324160": {
+      "appid": 324160,
+      "title": "CLANNAD",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=324160&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "333600": {
+      "appid": 333600,
+      "title": "NEKOPARA Vol. 1",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=333600&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "385800": {
+      "appid": 385800,
+      "title": "NEKOPARA Vol. 0",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=385800&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "420110": {
+      "appid": 420110,
+      "title": "NEKOPARA Vol. 2",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=420110&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "436670": {
+      "appid": 436670,
+      "title": "The Legend of Heroes: Trails in the Sky the 3rd",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=436670&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "462990": {
+      "appid": 462990,
+      "title": "Tomoyo After ~It's a Wonderful Life~ English Edition",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=462990&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "538680": {
+      "appid": 538680,
+      "title": "The Legend of Heroes: Trails of Cold Steel",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=538680&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "582010": {
+      "appid": 582010,
+      "title": "Monster Hunter: World",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=582010&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "602520": {
+      "appid": 602520,
+      "title": "NEKOPARA Vol. 3",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=602520&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "623080": {
+      "appid": 623080,
+      "title": "planetarian HD",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=623080&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "635940": {
+      "appid": 635940,
+      "title": "Little Busters! English Edition",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=635940&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "748490": {
+      "appid": 748490,
+      "title": "The Legend of Heroes: Trails of Cold Steel II",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=748490&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "897220": {
+      "appid": 897220,
+      "title": "Summer Pockets",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=897220&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "899970": {
+      "appid": 899970,
+      "title": "NEKOPARA Extra",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=899970&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "991270": {
+      "appid": 991270,
+      "title": "The Legend of Heroes: Trails of Cold Steel III",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=991270&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1086940": {
+      "appid": 1086940,
+      "title": "博德之门3",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1086940&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1091500": {
+      "appid": 1091500,
+      "title": "赛博朋克 2077",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1091500&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1174180": {
+      "appid": 1174180,
+      "title": "Red Dead Redemption 2",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1174180&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1198090": {
+      "appid": 1198090,
+      "title": "英雄传说：闪之轨迹Ⅳ",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1198090&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1245620": {
+      "appid": 1245620,
+      "title": "艾尔登法环",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1245620&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1406990": {
+      "appid": 1406990,
+      "title": "NEKOPARA Vol. 4",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1406990&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "1446780": {
+      "appid": 1446780,
+      "title": "MONSTER HUNTER RISE",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1446780&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1450080": {
+      "appid": 1450080,
+      "title": "英雄传说：闪之轨迹III",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1450080&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1450090": {
+      "appid": 1450090,
+      "title": "英雄传说：闪之轨迹II：改 –The Erebonian Civil War-",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1450090&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1450120": {
+      "appid": 1450120,
+      "title": "英雄传说：闪之轨迹I：改 –Thors Military Academy 1204–",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1450120&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1457510": {
+      "appid": 1457510,
+      "title": "英雄传说 闪之轨迹IV -THE END OF SAGA-",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1457510&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1457520": {
+      "appid": 1457520,
+      "title": "英雄传说 零之轨迹：改",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1457520&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1461920": {
+      "appid": 1461920,
+      "title": "英雄传说 碧之轨迹：改",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1461920&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1562940": {
+      "appid": 1562940,
+      "title": "英雄传说 创之轨迹",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1562940&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1593310": {
+      "appid": 1593310,
+      "title": "猫郎乐园 - Catboys Paradise",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1593310&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "1668510": {
+      "appid": 1668510,
+      "title": "The Legend of Heroes: Trails from Zero",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1668510&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1668520": {
+      "appid": 1668520,
+      "title": "The Legend of Heroes: Trails to Azure",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1668520&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1668540": {
+      "appid": 1668540,
+      "title": "The Legend of Heroes: Trails into Reverie",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1668540&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1680000": {
+      "appid": 1680000,
+      "title": "Rewrite+",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1680000&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "1687950": {
+      "appid": 1687950,
+      "title": "女神异闻录5皇家版",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1687950&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "1811950": {
+      "appid": 1811950,
+      "title": "英雄传说 黎之轨迹",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=1811950&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "2113920": {
+      "appid": 2113920,
+      "title": "英雄传说 黎之轨迹Ⅱ -绯红原罪-",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=2113920&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "2138610": {
+      "appid": 2138610,
+      "title": "The Legend of Heroes: Trails through Daybreak",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=2138610&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "2668430": {
+      "appid": 2668430,
+      "title": "The Legend of Heroes: Trails through Daybreak II",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=2668430&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "3375780": {
+      "appid": 3375780,
+      "title": "Trails in the Sky 1st Chapter",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=3375780&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "3418570": {
+      "appid": 3418570,
+      "title": "Summer Pockets REFLECTION BLUE",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=3418570&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "3447040": {
+      "appid": 3447040,
+      "title": "空之轨迹 the 1st",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=3447040&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    },
+    "3655150": {
+      "appid": 3655150,
+      "title": "NEKOPARA After",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=3655150&l=schinese&cc=US",
+      "verified_on": "2026-10-20"
+    },
+    "4225980": {
+      "appid": 4225980,
+      "title": "空之轨迹 the 2nd",
+      "type": "game",
+      "source": "https://store.steampowered.com/api/appdetails?appids=4225980&l=schinese&cc=CN",
+      "verified_on": "2026-10-20"
+    }
+  },
+  "aliases": [
+    {
+      "names": [
+        "老头环"
+      ],
+      "appids": [
+        1245620
+      ],
+      "basis": "保留 v0.1.2 已人工整理的常见玩家简称；官方 AppID 身份已重新核对。",
+      "references": []
+    },
+    {
+      "names": [
+        "大表哥2"
+      ],
+      "appids": [
+        1174180
+      ],
+      "basis": "保留 v0.1.2 已人工整理的常见玩家简称；官方 AppID 身份已重新核对。",
+      "references": []
+    },
+    {
+      "names": [
+        "博德3"
+      ],
+      "appids": [
+        1086940
+      ],
+      "basis": "保留 v0.1.2 已人工整理的常见玩家简称；官方 AppID 身份已重新核对。",
+      "references": []
+    },
+    {
+      "names": [
+        "空轨"
+      ],
+      "appids": [
+        251150,
+        251290,
+        436670,
+        3447040,
+        3375780,
+        4225980
+      ],
+      "basis": "系列简称；顺序为原作 FC、SC、3rd、重制首作两个 AppID、重制第二作。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "空轨FC"
+      ],
+      "appids": [
+        251150
+      ],
+      "basis": "保留既有空轨简称加官方章节编号；不同发行 AppID 不合并。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "空轨SC"
+      ],
+      "appids": [
+        251290
+      ],
+      "basis": "保留既有空轨简称加官方章节编号；不同发行 AppID 不合并。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "空轨3rd"
+      ],
+      "appids": [
+        436670
+      ],
+      "basis": "保留既有空轨简称加官方章节编号；不同发行 AppID 不合并。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "空轨1st"
+      ],
+      "appids": [
+        3447040,
+        3375780
+      ],
+      "basis": "保留既有空轨简称加官方章节编号；不同发行 AppID 不合并。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "空轨2nd"
+      ],
+      "appids": [
+        4225980
+      ],
+      "basis": "保留既有空轨简称加官方章节编号；不同发行 AppID 不合并。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "空轨重制版"
+      ],
+      "appids": [
+        3447040,
+        3375780,
+        4225980
+      ],
+      "basis": "保留既有空轨简称加官方章节编号；不同发行 AppID 不合并。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "艹猫",
+        "草猫",
+        "NEKOPARA",
+        "猫娘乐园"
+      ],
+      "appids": [
+        333600,
+        420110,
+        602520,
+        1406990,
+        385800,
+        899970,
+        3655150,
+        1593310
+      ],
+      "basis": "艹猫、草猫为用户明确提供的系列俗称；猫娘乐园为官方中文系列名。顺序为 Vol.1–4、Vol.0、Extra、After、Catboys Paradise；不含动画或 DLC。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "艹猫0",
+        "草猫0"
+      ],
+      "appids": [
+        385800
+      ],
+      "basis": "用户提供的系列俗称加官方 Vol. 卷号，仅对应该卷本体。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "艹猫1",
+        "草猫1"
+      ],
+      "appids": [
+        333600
+      ],
+      "basis": "用户提供的系列俗称加官方 Vol. 卷号，仅对应该卷本体。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "艹猫2",
+        "草猫2"
+      ],
+      "appids": [
+        420110
+      ],
+      "basis": "用户提供的系列俗称加官方 Vol. 卷号，仅对应该卷本体。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "艹猫3",
+        "草猫3"
+      ],
+      "appids": [
+        602520
+      ],
+      "basis": "用户提供的系列俗称加官方 Vol. 卷号，仅对应该卷本体。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "艹猫4",
+        "草猫4"
+      ],
+      "appids": [
+        1406990
+      ],
+      "basis": "用户提供的系列俗称加官方 Vol. 卷号，仅对应该卷本体。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "艹猫Extra",
+        "草猫Extra"
+      ],
+      "appids": [
+        899970
+      ],
+      "basis": "用户提供的系列俗称加官方作品副标题，仅对应该作品本体。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "艹猫After",
+        "草猫After"
+      ],
+      "appids": [
+        3655150
+      ],
+      "basis": "用户提供的系列俗称加官方作品副标题，仅对应该作品本体。",
+      "references": [
+        "https://nekopara.com/cn/introduction_cn"
+      ]
+    },
+    {
+      "names": [
+        "CLANNAD"
+      ],
+      "appids": [
+        324160
+      ],
+      "basis": "官方本体标题；不把 Side Stories 或智代 After 合并为本体。",
+      "references": [
+        "https://store.steampowered.com/app/324160/"
+      ]
+    },
+    {
+      "names": [
+        "智代After",
+        "智代 After"
+      ],
+      "appids": [
+        462990
+      ],
+      "basis": "中文玩家标题用法；Steam 对应 English Edition，不表示其支持中文。",
+      "references": [
+        "https://www.ptt.cc/man/LeafKey/DFCD/D0/D58/M.1151722476.A.725.html"
+      ]
+    },
+    {
+      "names": [
+        "小小克星"
+      ],
+      "appids": [
+        635940
+      ],
+      "basis": "社区档案同时列出小小克星与 Little Busters!，Steam 对应 English Edition，不等同 EX 版。",
+      "references": [
+        "https://www.ymgal.games/ga10800"
+      ]
+    },
+    {
+      "names": [
+        "罚抄"
+      ],
+      "appids": [
+        1680000
+      ],
+      "basis": "社区档案列出的 Rewrite 俗称；Steam 本体为 Rewrite+，不隐含单独的 Harvest festa!。",
+      "references": [
+        "https://www.ymgal.games/ga11010"
+      ]
+    },
+    {
+      "names": [
+        "夏日口袋"
+      ],
+      "appids": [
+        3418570,
+        897220
+      ],
+      "basis": "中文标题通用用法；先列 REFLECTION BLUE，再列原版。二者是不同游戏 AppID，不是共用历史的豪华版。",
+      "references": [
+        "https://www.sina.cn/news/detail/5206444056250665.html"
+      ]
+    },
+    {
+      "names": [
+        "夏日口袋RB"
+      ],
+      "appids": [
+        3418570
+      ],
+      "basis": "中文标题加官方 REFLECTION BLUE 的 RB 缩写；仅对应扩展版本体。",
+      "references": [
+        "https://www.sina.cn/news/detail/5206444056250665.html"
+      ]
+    },
+    {
+      "names": [
+        "星之梦"
+      ],
+      "appids": [
+        623080,
+        316720
+      ],
+      "basis": "官方中文说明使用星之梦；先列 HD、再列原版，不把前传 Snow Globe 混为同一作。",
+      "references": [
+        "https://store.steampowered.com/api/appdetails?appids=623080&l=schinese&cc=US"
+      ]
+    },
+    {
+      "names": [
+        "零轨"
+      ],
+      "appids": [
+        1457520,
+        1668510
+      ],
+      "basis": "常用简称；分别保留亚洲版与国际版 AppID。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "碧轨"
+      ],
+      "appids": [
+        1461920,
+        1668520
+      ],
+      "basis": "常用简称；分别保留亚洲版与国际版 AppID。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "闪轨"
+      ],
+      "appids": [
+        1450120,
+        538680,
+        1450090,
+        748490,
+        1450080,
+        991270,
+        1457510,
+        1198090
+      ],
+      "basis": "系列简称；按 I、II、III、IV 顺序，每部先列亚洲发行 AppID、再列国际发行 AppID，共 8 项。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "闪轨1"
+      ],
+      "appids": [
+        1450120,
+        538680
+      ],
+      "basis": "常用系列简称加章节号；同部不同发行 AppID 保留为候选，不合并价格。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "闪轨2"
+      ],
+      "appids": [
+        1450090,
+        748490
+      ],
+      "basis": "常用系列简称加章节号；同部不同发行 AppID 保留为候选，不合并价格。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "闪轨3"
+      ],
+      "appids": [
+        1450080,
+        991270
+      ],
+      "basis": "常用系列简称加章节号；同部不同发行 AppID 保留为候选，不合并价格。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "闪轨4"
+      ],
+      "appids": [
+        1457510,
+        1198090
+      ],
+      "basis": "常用系列简称加章节号；同部不同发行 AppID 保留为候选，不合并价格。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "创轨"
+      ],
+      "appids": [
+        1562940,
+        1668540
+      ],
+      "basis": "常用简称；分别保留亚洲版与国际版 AppID。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/"
+      ]
+    },
+    {
+      "names": [
+        "黎轨"
+      ],
+      "appids": [
+        1811950,
+        2138610,
+        2113920,
+        2668430
+      ],
+      "basis": "系列简称；先第一作、再第二作，每部先亚洲发行 AppID、再国际发行 AppID。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/",
+        "https://m.tgbus.com/e3/news/194698"
+      ]
+    },
+    {
+      "names": [
+        "黎轨1"
+      ],
+      "appids": [
+        1811950,
+        2138610
+      ],
+      "basis": "常用系列简称加章节号；同部不同发行 AppID 保留为候选。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/",
+        "https://m.tgbus.com/e3/news/194698"
+      ]
+    },
+    {
+      "names": [
+        "黎轨2"
+      ],
+      "appids": [
+        2113920,
+        2668430
+      ],
+      "basis": "常用系列简称加章节号；同部不同发行 AppID 保留为候选。",
+      "references": [
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=3446219125",
+        "https://trails-game.com/books/",
+        "https://m.tgbus.com/e3/news/194698"
+      ]
+    },
+    {
+      "names": [
+        "赛博朋克2077"
+      ],
+      "appids": [
+        1091500
+      ],
+      "basis": "官方中文标题的无空格写法；纯数字 2077 仍按 Steam AppID 处理。",
+      "references": [
+        "https://store.steampowered.com/app/1091500/"
+      ]
+    },
+    {
+      "names": [
+        "P5R"
+      ],
+      "appids": [
+        1687950
+      ],
+      "basis": "官方商品页面使用的 PERSONA 5 ROYAL / P5R 缩写；仅皇家版本体。",
+      "references": [
+        "https://store.steampowered.com/app/1687950/",
+        "https://asia.sega.com/persona-remaster/p5r/cn/"
+      ]
+    },
+    {
+      "names": [
+        "怪猎世界"
+      ],
+      "appids": [
+        582010
+      ],
+      "basis": "常用怪物猎人简称加 World 的中文名，不包括 Iceborne DLC。",
+      "references": [
+        "https://store.steampowered.com/app/582010/"
+      ]
+    },
+    {
+      "names": [
+        "怪猎崛起"
+      ],
+      "appids": [
+        1446780
+      ],
+      "basis": "常用怪物猎人简称加 Rise 的中文名，不包括 Sunbreak DLC。",
+      "references": [
+        "https://store.steampowered.com/app/1446780/"
+      ]
+    }
+  ]
+}

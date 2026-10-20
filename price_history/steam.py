@@ -6,12 +6,44 @@ Failure is non-fatal; exact administrator mappings remain available.
 from __future__ import annotations
 import asyncio
 import html
+import logging
 import math
 from email.utils import parsedate_to_datetime
 import re
 import time
 from datetime import datetime, timezone
 import aiohttp
+
+_NAME_LOGGER = logging.getLogger('astrbot_plugin_steam_price_history.name_lookup')
+
+
+def _log_name_failure(stage: str, exc: Exception, diagnostic_logger=None) -> None:
+    """Log only allowlisted metadata, never exception text or traceback data."""
+    error_type = type(exc).__name__
+    if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,79}', error_type):
+        error_type = 'Exception'
+    status = getattr(exc, 'status', None)
+    if isinstance(status, bool) or not isinstance(status, int) or not 100 <= status <= 599:
+        status = 'unknown'
+    target = diagnostic_logger if diagnostic_logger is not None else _NAME_LOGGER
+    # AstrBot's logger also feeds its WebUI. Pass only the preformatted safe
+    # string, and do not duplicate it through the standalone logger.
+    target.warning(f'Name lookup failed: stage={stage} error={error_type} status={status}')
+
+
+class SteamHTTPError(OSError):
+    """A safe HTTP failure that retains its status without request/response data."""
+    def __init__(self, status: int):
+        super().__init__('Steam 服务暂不可用。')
+        self.status = status
+
+
+class SteamResponseError(ValueError):
+    """A safe schema failure, without the upstream response body."""
+    def __init__(self):
+        super().__init__('Steam 名称搜索响应无效。')
+        self.status = 200
+
 
 MARKERS = {
     'deluxe': ('deluxe', '豪华'), 'gold': ('gold', '黄金'),
@@ -38,9 +70,10 @@ class SearchResults(list):
 
 
 class SteamStore:
-    def __init__(self, session=None):
+    def __init__(self, session=None, diagnostic_logger=None):
         self.session = session
         self.owned = session is None
+        self.diagnostic_logger = diagnostic_logger
         self.cache = {}
         self.sem = asyncio.Semaphore(3)
 
@@ -56,7 +89,7 @@ class SteamStore:
             async with self.session.get('https://store.steampowered.com/api/' + endpoint,
                 params={param: str(ident), 'cc': country, 'l': 'schinese'}) as response:
                 if response.status != 200:
-                    return None
+                    raise SteamHTTPError(response.status)
                 raw = await response.json(content_type=None)
         if not isinstance(raw, dict):
             return None
@@ -70,6 +103,14 @@ class SteamStore:
             self.cache[key] = (time.time() + 86400, data)
         return data
 
+    async def _optional_get(self, endpoint, ident, country):
+        # Edition discovery historically skips unavailable HTTP responses.
+        # Keep that behavior while name/type lookups retain status diagnostics.
+        try:
+            return await self._get(endpoint, ident, country)
+        except SteamHTTPError:
+            return None
+
     async def app_details(self, appid: int):
         """Identity/type lookup; prices from this response are not consumed."""
         return await self._get('appdetails', appid, 'CN')
@@ -80,7 +121,7 @@ class SteamStore:
             self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=15))
         # Do not retry 429 in a tight loop or hammer Steam after a rate limit.
         if getattr(self, 'search_retry_at', 0) > time.time():
-            raise OSError('Steam 名称搜索暂时限流，请稍后重试。')
+            raise SteamHTTPError(429)
         async with self.sem:
             async with self.session.get('https://store.steampowered.com/api/storesearch/',
                 params={'term': title, 'l': 'schinese', 'cc': 'CN'}) as response:
@@ -97,10 +138,10 @@ class SteamStore:
                             retry_after = 60
                     self.search_retry_at = time.time() + max(60, retry_after)
                 if response.status != 200:
-                    raise OSError('Steam 名称搜索暂不可用。')
+                    raise SteamHTTPError(response.status)
                 raw = await response.json(content_type=None)
         if not isinstance(raw, dict) or not isinstance(raw.get('items'), list):
-            raise ValueError('Steam 名称搜索响应无效。')
+            raise SteamResponseError()
         results, seen, failed = [], set(), False
         for item in raw['items'][:8]:
             if not isinstance(item, dict) or item.get('type') != 'app':
@@ -115,10 +156,13 @@ class SteamStore:
             # Store search type=app includes demos/software. Verify actual type.
             try:
                 details = await self._get('appdetails', appid, 'CN')
-            except (OSError, TimeoutError, ValueError, aiohttp.ClientError):
+            except (OSError, TimeoutError, ValueError, aiohttp.ClientError) as exc:
+                _log_name_failure('steam_type_verify', exc, self.diagnostic_logger)
                 failed = True
                 continue
             if not details:
+                _log_name_failure('steam_type_verify', OSError('Steam 条目核验暂不可用。'),
+                                  self.diagnostic_logger)
                 failed = True
                 continue
             if details.get('type') not in {'game', 'dlc'}:
@@ -135,13 +179,13 @@ class SteamStore:
         Bundles, ordinary collections, commercial licenses and ambiguous packages
         are omitted rather than inferred from a fuzzy title search.
         """
-        root = await self._get('appdetails', appid, country)
+        root = await self._optional_get('appdetails', appid, country)
         if not root:
             return []
         result = []
         packages = root.get('packages', [])[:20]
         for packageid in packages:
-            pkg = await self._get('packagedetails', packageid, country)
+            pkg = await self._optional_get('packagedetails', packageid, country)
             if not pkg:
                 continue
             name = html.unescape(re.sub('<[^>]+>', '', pkg.get('name', '')))
@@ -157,7 +201,7 @@ class SteamStore:
             for ident in ids:
                 if ident == appid:
                     continue
-                info = await self._get('appdetails', ident, country)
+                info = await self._optional_get('appdetails', ident, country)
                 if not info or info.get('type') != 'dlc' or int(info.get('fullgame', {}).get('appid', 0)) != appid:
                     valid = False
                     break

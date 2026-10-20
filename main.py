@@ -35,9 +35,10 @@ class SteamPriceHistoryPlugin(Star):
         steam = None
         try:
             client = ITADClient(key, timeout=20, concurrency=4)
-            steam = SteamStore()
+            steam = SteamStore(diagnostic_logger=logger)
             store = Store(directory / 'history.sqlite3')
-            self.service = PriceService(client, steam, store, directory / 'charts', self.config)
+            self.service = PriceService(client, steam, store, directory / 'charts', self.config,
+                                        diagnostic_logger=logger)
             self.poll_task = asyncio.create_task(self._poll(), name='steam-price-history-cache-refresh')
         except (ValueError, ITADError) as exc:
             self.init_error = str(exc)

@@ -87,6 +87,8 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
                 plugin=self.module.SteamPriceHistoryPlugin(object(),{'itad_api_key':'test-only-key'})
                 await plugin.initialize()
                 self.assertIsNotNone(plugin.service)
+                self.assertIs(plugin.service.diagnostic_logger, self.module.logger)
+                self.assertIs(plugin.service.steam.diagnostic_logger, self.module.logger)
                 self.assertTrue((Path(directory)/'plugin_data/astrbot_plugin_steam_price_history/history.sqlite3').exists())
                 task=plugin.poll_task
                 await plugin.terminate()

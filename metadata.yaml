@@ -1,7 +1,7 @@
 name: astrbot_plugin_steam_price_history
 display_name: Steam 价格历史
 desc: Steam 分地区史低查询、持久历史缓存与最近一年价格曲线
-version: v0.1.2
+version: v0.1.3
 author: ureiCyber
 repo: https://github.com/ureiCyber/astrbot_plugin_steam_price_history
 
