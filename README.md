@@ -1,11 +1,11 @@
 # astrbot_plugin_steam_price_history
 
-计划开发的 AstrBot 插件，用于查询 Steam 游戏价格及历史价格信息。
+独立实现的 AstrBot Steam 价格历史插件。
 
-## 项目状态
+## 开发状态
 
-开发准备中。目前仅完成仓库初始化，插件功能尚未实现，暂不可安装使用。
+开发中，暂不可安装使用。当前检查点包含持久化存储基础和对应测试，完整查询、接口及曲线仍在实现。
 
 ## 灵感来源
 
-本项目受到 [Maoer233/astrbot_plugins_steam_shop_price](https://github.com/Maoer233/astrbot_plugins_steam_shop_price) 的启发。
+感谢 [Maoer233/astrbot_plugins_steam_shop_price](https://github.com/Maoer233/astrbot_plugins_steam_shop_price) 提供灵感。
