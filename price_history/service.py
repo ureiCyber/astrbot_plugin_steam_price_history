@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import time
+import aiohttp
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -12,6 +13,7 @@ from .itad import ITADError
 from .query import parse_query, QueryError
 from .rendering import render_history_chart, format_price_summary, format_candidates, candidate_kind
 from .storage import Store
+from .names import alias_map, normalize_name, name_rank
 
 UTC = timezone.utc
 
@@ -48,6 +50,7 @@ class PriceService:
         self.daily_hour, self.daily_minute = self._daily_time(self.config.get('daily_time', '09:00'))
         self.mappings = self._mapping('edition_mappings')
         self.aliases = self._mapping('edition_aliases')
+        self.game_aliases = alias_map(self._mapping('game_aliases'))
         if any(not isinstance(v, dict) for v in self.mappings.values()):
             raise ValueError('edition_mappings 中每个 AppID 的值必须是版本对象。')
 
@@ -88,43 +91,128 @@ class PriceService:
         self.store.cache_put('info:' + ident, info, self.clock() + 86400)
         return info
 
+    async def _appid_candidate(self, appid, localized=None, verified_type=None):
+        item = await self.client.lookup_appid(appid)
+        if not item:
+            return None
+        details = await self.info(item['id'])
+        # AppID lookup must resolve to this precise Steam product, not an edition
+        # or an unrelated game that happens to have the same name.
+        if str(details.get('appid')) != str(appid):
+            return None
+        kind = details.get('type') or item.get('type')
+        if kind in {None, '', 'unknown'}:
+            if verified_type is None and hasattr(self.steam, 'app_details'):
+                steam_info = await self.steam.app_details(appid)
+                if not steam_info:
+                    raise OSError('Steam 条目核验暂不可用。')
+                verified_type = steam_info.get('type')
+            kind = verified_type
+        if kind not in {'game', 'dlc'}:
+            return None
+        result = {**item, 'appid': int(appid), 'type': kind}
+        if localized:
+            result['title'] = localized
+            result['localized_title'] = localized
+        return result
+
     async def resolve(self, query):
-        # Version the cache: earlier releases discarded bundles before caching.
-        key = f'resolve:v2:{query.appid or query.title}'
+        normalized = normalize_name(query.title)
+        alias_ids = self.game_aliases.get(normalized) if not query.appid else None
+        # Include configured IDs so changing an alias invalidates old results.
+        identity = [query.appid, normalized, alias_ids]
+        key = 'resolve:v3:' + hashlib.sha256(json.dumps(identity, ensure_ascii=False).encode()).hexdigest()
+        return await self._once(key, lambda: self._resolve(query, normalized, alias_ids, key))
+
+    async def _resolve(self, query, normalized, alias_ids, key):
         cached = self.store.cache_get(key, self.clock())
         if cached is None:
-            if query.appid:
-                item = await self.client.lookup_appid(query.appid)
-                candidates = [item] if item else []
+            candidates, errors = [], []
+            recoverable = (ITADError, OSError, TimeoutError, ValueError, aiohttp.ClientError)
+            if query.appid or alias_ids:
+                for appid in ([query.appid] if query.appid else alias_ids):
+                    try:
+                        item = await self._appid_candidate(appid)
+                        if item:
+                            candidates.append(item)
+                    except recoverable as exc:
+                        errors.append(exc)
             else:
-                candidates = await self.client.search(query.title)
-            candidates = [dict(c) for c in candidates[:8]]
+                # English ITAD lookup remains useful even if the localized
+                # storefront index omits a product. Failures are independent.
+                try:
+                    candidates = await self.client.search(normalized)
+                except recoverable as exc:
+                    errors.append(exc)
+                if hasattr(self.steam, 'search'):
+                    try:
+                        localized = await self.steam.search(normalized)
+                        if getattr(localized, 'incomplete', False):
+                            errors.append(OSError('Steam 部分条目核验暂不可用。'))
+                    except recoverable as exc:
+                        localized = []
+                        errors.append(exc)
+                    mapped = []
+                    for row in localized[:8]:
+                        try:
+                            item = await self._appid_candidate(row['appid'], row['title'], row.get('type'))
+                            if item:
+                                mapped.append(item)
+                        except recoverable as exc:
+                            errors.append(exc)
+                    # Stable ranking: actual exact localized titles beat partial
+                    # matches, retaining API order for duplicate exact names.
+                    candidates = mapped + candidates
+                candidates = sorted(candidates, key=lambda c: name_rank(c.get('title', ''), normalized))
+            candidates = [dict(c) for c in candidates]
+            unique = {}
+            for candidate in candidates:
+                unique.setdefault(candidate['id'], candidate)
+            candidates = list(unique.values())[:8]
             unknown = [c for c in candidates if candidate_kind(c) == 'unknown']
-            # One bounded batch identifies Steam bundle products even when ITAD
-            # search has type=null. Never infer a product type from its title.
             shop_ids = {}
             if unknown and hasattr(self.client, 'shop_ids'):
                 try:
                     shop_ids = await self.client.shop_ids([c['id'] for c in unknown])
-                except ITADError:
-                    pass
+                except recoverable as exc:
+                    errors.append(exc)
             for candidate in unknown:
                 candidate['shop_ids'] = shop_ids.get(candidate['id'], [])
                 if candidate_kind(candidate) == 'unknown':
                     try:
                         details = await self.info(candidate['id'])
                         candidate.update({k: details[k] for k in ('type', 'appid') if details.get(k) is not None})
-                    except ITADError:
-                        pass
+                    except recoverable as exc:
+                        errors.append(exc)
+            # Same-title ITAD search hits often omit AppIDs even though info
+            # supplies them. Preserve their identity in the disambiguation list.
+            title_counts = {}
+            for candidate in candidates:
+                name = normalize_name(candidate.get('title', ''))
+                title_counts[name] = title_counts.get(name, 0) + 1
+            for candidate in candidates:
+                if (candidate_kind(candidate) == 'game' and not candidate.get('appid')
+                        and title_counts[normalize_name(candidate.get('title', ''))] > 1):
+                    try:
+                        details = await self.info(candidate['id'])
+                        candidate.update({k: details[k] for k in ('appid', 'type') if details.get(k) is not None})
+                    except recoverable as exc:
+                        errors.append(exc)
             if not candidates:
+                if errors:
+                    raise QueryError('名称查询服务暂不可用，未把网络错误当作“找不到”。请稍后重试或输入 Steam AppID。')
                 raise QueryError('未找到该游戏，请检查名称或输入 Steam 商店链接。')
             cached = candidates
-            self.store.cache_put(key, cached, self.clock() + 86400)
+            # Do not retain incomplete backend results for a full day.
+            self.store.cache_put(key, cached, self.clock() + (300 if errors else 86400))
+            self.store.prune_cache(self.clock())
         games = [c for c in cached if candidate_kind(c) == 'game']
         if not games:
             raise QueryError('未找到已确认的游戏本体，请输入 Steam AppID 或 /app/ 链接。\n\n' + format_candidates(cached))
         selected = games[0]
-        base = await self.info(selected['id'])
+        base = dict(await self.info(selected['id']))
+        if selected.get('localized_title'):
+            base['title'] = selected['localized_title']
         return base, [c for c in cached if c['id'] != selected['id']]
 
     async def editions(self, base, country):

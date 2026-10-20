@@ -6,6 +6,8 @@ Failure is non-fatal; exact administrator mappings remain available.
 from __future__ import annotations
 import asyncio
 import html
+import math
+from email.utils import parsedate_to_datetime
 import re
 import time
 from datetime import datetime, timezone
@@ -26,6 +28,13 @@ def edition_kind(title: str) -> str | None:
         if any(n in lower for n in names):
             return kind
     return None
+
+
+class SearchResults(list):
+    """Verified results, with a signal not to long-cache partial failures."""
+    def __init__(self, rows, incomplete=False):
+        super().__init__(rows)
+        self.incomplete = incomplete
 
 
 class SteamStore:
@@ -57,8 +66,68 @@ class SteamStore:
         data = record.get('data') if record.get('success') else None
         if not isinstance(data, dict):
             data = None
-        self.cache[key] = (time.time() + 86400, data)
+        if data is not None:
+            self.cache[key] = (time.time() + 86400, data)
         return data
+
+    async def app_details(self, appid: int):
+        """Identity/type lookup; prices from this response are not consumed."""
+        return await self._get('appdetails', appid, 'CN')
+
+    async def search(self, title: str) -> list[dict]:
+        """Localized name discovery only. Never use search prices as region prices."""
+        if self.session is None:
+            self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=15))
+        # Do not retry 429 in a tight loop or hammer Steam after a rate limit.
+        if getattr(self, 'search_retry_at', 0) > time.time():
+            raise OSError('Steam 名称搜索暂时限流，请稍后重试。')
+        async with self.sem:
+            async with self.session.get('https://store.steampowered.com/api/storesearch/',
+                params={'term': title, 'l': 'schinese', 'cc': 'CN'}) as response:
+                if response.status == 429:
+                    value = response.headers.get('Retry-After', '60')
+                    try:
+                        retry_after = float(value)
+                        if not math.isfinite(retry_after):
+                            raise ValueError()
+                    except (ValueError, TypeError):
+                        try:
+                            retry_after = parsedate_to_datetime(value).timestamp() - time.time()
+                        except (ValueError, TypeError, OverflowError):
+                            retry_after = 60
+                    self.search_retry_at = time.time() + max(60, retry_after)
+                if response.status != 200:
+                    raise OSError('Steam 名称搜索暂不可用。')
+                raw = await response.json(content_type=None)
+        if not isinstance(raw, dict) or not isinstance(raw.get('items'), list):
+            raise ValueError('Steam 名称搜索响应无效。')
+        results, seen, failed = [], set(), False
+        for item in raw['items'][:8]:
+            if not isinstance(item, dict) or item.get('type') != 'app':
+                continue
+            appid = item.get('id')
+            if isinstance(appid, bool) or not str(appid).isdecimal() or int(appid) <= 0:
+                continue
+            appid = int(appid)
+            if appid in seen:
+                continue
+            seen.add(appid)
+            # Store search type=app includes demos/software. Verify actual type.
+            try:
+                details = await self._get('appdetails', appid, 'CN')
+            except (OSError, TimeoutError, ValueError, aiohttp.ClientError):
+                failed = True
+                continue
+            if not details:
+                failed = True
+                continue
+            if details.get('type') not in {'game', 'dlc'}:
+                continue
+            results.append({'appid': appid, 'title': details.get('name') or item.get('name', ''),
+                            'type': details['type']})
+        if failed and not results:
+            raise OSError('Steam 搜索条目核验暂不可用，请稍后重试。')
+        return SearchResults(results, incomplete=failed)
 
     async def discover(self, appid: int, country: str) -> list[dict]:
         """Only named editions whose package contains this app and no unrelated game.

@@ -44,3 +44,77 @@ class SteamTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(await client.cover(1,'CN',d),path)
     async def test_collectors_canonical(self):
         self.assertEqual(edition_kind("Game Collector's Edition"),'collectors')
+
+class SearchResponse:
+    def __init__(self, payload, status=200, headers=None):
+        self.payload, self.status, self.headers = payload, status, headers or {}
+    async def __aenter__(self): return self
+    async def __aexit__(self, *args): pass
+    async def json(self, **kwargs): return self.payload
+
+class SearchSession:
+    def __init__(self, response):
+        self.response, self.calls = response, []
+    def get(self, url, **kwargs):
+        self.calls.append((url,kwargs))
+        return self.response
+
+class StoreSearchTests(unittest.IsolatedAsyncioTestCase):
+    async def test_locale_type_filter_and_no_price_use(self):
+        store = Discovery({('appdetails',3339420):{'name':'你的老婆','type':'game'},
+                           ('appdetails',2):{'name':'Demo','type':'demo'},
+                           ('appdetails',3):{'name':'DLC','type':'dlc'}})
+        store.session=SearchSession(SearchResponse({'items':[
+            {'type':'app','id':3339420,'name':'your wife','price':{'currency':'CNY','final':10}},
+            {'type':'app','id':3339420,'name':'duplicate'},
+            {'type':'app','id':2,'name':'Demo'}, {'type':'app','id':3,'name':'DLC'},
+            {'type':'bundle','id':4}, {'type':'app','id':True}]}))
+        rows=await store.search('你的老婆')
+        self.assertEqual([r['appid'] for r in rows],[3339420,3])
+        self.assertNotIn('price',rows[0])
+        self.assertEqual(store.session.calls[0][1]['params'],
+                         {'term':'你的老婆','l':'schinese','cc':'CN'})
+    async def test_rate_limit_cooldown_respects_retry_after(self):
+        import time
+        store=SteamStore(SearchSession(SearchResponse({},429,{'Retry-After':'120'})))
+        with self.assertRaises(OSError): await store.search('x')
+        self.assertGreater(store.search_retry_at,time.time()+110)
+        with self.assertRaises(OSError): await store.search('x')
+        self.assertEqual(len(store.session.calls),1)
+    async def test_invalid_response_and_http_errors(self):
+        for payload,status in [([],200),({},200),({},500)]:
+            store=SteamStore(SearchSession(SearchResponse(payload,status)))
+            with self.assertRaises((OSError,ValueError)):
+                await store.search('x')
+    async def test_results_are_bounded(self):
+        store=Discovery({('appdetails',n):{'name':str(n),'type':'game'} for n in range(1,21)})
+        store.session=SearchSession(SearchResponse({'items':[{'type':'app','id':n} for n in range(1,21)]}))
+        self.assertEqual(len(await store.search('x')),8)
+    async def test_details_transient_failure_not_cached(self):
+        session=SearchSession(SearchResponse({'1':{'success':False}}))
+        store=SteamStore(session)
+        self.assertIsNone(await store._get('appdetails',1,'CN'))
+        session.response=SearchResponse({'1':{'success':True,'data':{'type':'game'}}})
+        self.assertEqual((await store._get('appdetails',1,'CN'))['type'],'game')
+        self.assertEqual(len(session.calls),2)
+    async def test_all_detail_failures_raise_not_no_match(self):
+        store=Discovery({})
+        store.session=SearchSession(SearchResponse({'items':[{'type':'app','id':1}]}))
+        with self.assertRaises(OSError): await store.search('x')
+    async def test_one_detail_failure_preserves_verified_results(self):
+        store=Discovery({('appdetails',1):{'type':'game','name':'One'}})
+        original=store._get
+        async def fail_second(endpoint,ident,country):
+            if ident==2: raise TimeoutError()
+            return await original(endpoint,ident,country)
+        store._get=fail_second
+        store.session=SearchSession(SearchResponse({'items':[{'type':'app','id':n} for n in (1,2)]}))
+        rows=await store.search('One')
+        self.assertEqual(rows[0]['appid'],1)
+        self.assertTrue(rows.incomplete)
+    async def test_rate_limit_http_date(self):
+        import time
+        from email.utils import formatdate
+        store=SteamStore(SearchSession(SearchResponse({},429,{'Retry-After':formatdate(time.time()+180,usegmt=True)})))
+        with self.assertRaises(OSError): await store.search('x')
+        self.assertGreater(store.search_retry_at,time.time()+170)

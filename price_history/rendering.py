@@ -446,18 +446,21 @@ def candidate_kind(candidate: Mapping[str, Any]) -> str:
 def format_candidates(candidates: Sequence[Mapping[str, Any]], *, query: str = "", limit: int = 8) -> str:
     """Separate verified bundles from similar games; no membership claim."""
     groups = {"game": [], "bundle": [], "unknown": []}
-    seen_ids, seen_titles = set(), set()
+    seen_ids, seen_titles, seen_apps = set(), set(), set()
     for candidate in candidates:
         if not isinstance(candidate, Mapping):
             continue
         ident = candidate.get("id") or candidate.get("appid") or candidate.get("steam_appid")
+        app_identity = candidate.get("appid") or candidate.get("steam_appid")
         title_key = _clean(candidate.get("title") or candidate.get("name")).casefold()
         kind = candidate_kind(candidate)
         # Equal names across different product types are not duplicates.
         title_identity = (kind, title_key)
-        if (ident is not None and str(ident) in seen_ids) or (title_key and title_identity in seen_titles):
+        if (ident is not None and str(ident) in seen_ids) or (app_identity and str(app_identity) in seen_apps) or (ident is None and title_key and title_identity in seen_titles):
             continue
         groups[kind].append(candidate)
+        if app_identity:
+            seen_apps.add(str(app_identity))
         if ident is not None:
             seen_ids.add(str(ident))
         if title_key:

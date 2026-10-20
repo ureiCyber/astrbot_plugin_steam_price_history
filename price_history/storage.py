@@ -71,5 +71,11 @@ class Store:
             self.db.execute('INSERT OR REPLACE INTO cache VALUES(?,?,?)',
                             (key, expires, json.dumps(value, ensure_ascii=False)))
 
+    def prune_cache(self, now: float, limit: int = 2048) -> None:
+        """Bound disposable lookup metadata; never delete price history/state."""
+        with self.db:
+            self.db.execute('DELETE FROM cache WHERE expires<=?', (now,))
+            self.db.execute("DELETE FROM cache WHERE key IN (SELECT key FROM cache WHERE key NOT IN ('daily-run','daily-backoff') ORDER BY expires DESC, key LIMIT -1 OFFSET ?)", (limit,))
+
     def close(self) -> None:
         self.db.close()

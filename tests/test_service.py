@@ -259,3 +259,21 @@ class BundleCandidateTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('Example Game', text)
         self.assertIn('类型尚未确认', text)
         self.assertNotIn('还有其他类似名字的游戏', text)
+
+class LocalizedRegionTests(unittest.IsolatedAsyncioTestCase):
+    asyncSetUp = QueryFlowTests.asyncSetUp
+    asyncTearDown = QueryFlowTests.asyncTearDown
+    async def test_localized_search_does_not_change_price_country(self):
+        async def search(title):
+            return [{'appid':3339420,'title':'你的老婆','type':'game'}]
+        async def empty(title): return []
+        async def info(ident): return {'id':ident,'title':'your wife','appid':3339420,'type':'game'}
+        self.service.steam.search=search
+        self.client.search=empty
+        self.client.info=info
+        _,text=await self.service.query('JP 你的老婆')
+        regional=[c for c in self.client.calls if c[0] in ('price','history')]
+        self.assertTrue(regional)
+        self.assertTrue(all(c[2]=='JP' for c in regional))
+        self.assertIn('你的老婆',text)
+        self.assertIn('/app/3339420/',text)
