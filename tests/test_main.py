@@ -1,5 +1,8 @@
 """Adapter contract tests with local AstrBot stubs, not a real bot runtime."""
 import asyncio
+import base64
+from io import BytesIO
+from PIL import Image as PILImage
 import importlib.util
 from pathlib import Path
 import sys
@@ -16,15 +19,15 @@ class Plain:
     def __init__(self,text): self.text=text
 class Image:
     @classmethod
-    def fromFileSystem(cls,path): return ('image',path)
+    def fromBytes(cls,data): return ('image', 'base64://' + base64.b64encode(data).decode('utf-8'))
 class Event:
     def __init__(self,text): self.text=text
     def get_message_str(self): return self.text
     def plain_result(self,text): return ('text',text)
     def chain_result(self,chain): return ('chain',chain)
 class Service:
-    def __init__(self): self.query_text=None; self.closed=False
-    async def query(self,text): self.query_text=text; return Path('/tmp/chart.png'),'最终结果'
+    def __init__(self, path=None): self.query_text=None; self.closed=False; self.path=path
+    async def query(self,text): self.query_text=text; return self.path,'最终结果'
     async def close(self): self.closed=True
 
 class AdapterTests(unittest.IsolatedAsyncioTestCase):
@@ -59,12 +62,22 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
         await plugin.terminate()
     async def test_one_final_message_keeps_full_game_name(self):
         plugin=self.module.SteamPriceHistoryPlugin(object(),{})
-        plugin.service=Service()
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / 'chart.png'
+        PILImage.new('RGB', (1080, 600), '#111827').save(path)
+        plugin.service=Service(path)
         results=[r async for r in plugin.history(Event('史低 JP 豪华版 游戏 史低 特别篇'))]
         self.assertEqual(plugin.service.query_text,'JP 豪华版 游戏 史低 特别篇')
         self.assertEqual(len(results),1)
         self.assertEqual(results[0][0],'chain')
         self.assertEqual(len(results[0][1]),2)
+        path.unlink()
+        encoded = results[0][1][0][1]
+        self.assertTrue(encoded.startswith('base64://'))
+        with PILImage.open(BytesIO(base64.b64decode(encoded.removeprefix('base64://')))) as image:
+            image.load()
+            self.assertEqual(image.format, 'JPEG')
         service=plugin.service
         await plugin.terminate()
         self.assertTrue(service.closed)
@@ -78,3 +91,13 @@ class AdapterTests(unittest.IsolatedAsyncioTestCase):
                 task=plugin.poll_task
                 await plugin.terminate()
                 self.assertTrue(task.done())
+
+
+    async def test_missing_image_keeps_price_text(self):
+        plugin=self.module.SteamPriceHistoryPlugin(object(),{})
+        plugin.service=Service(Path('/nonexistent/steam-test-chart.png'))
+        results=[r async for r in plugin.history(Event('史低 220'))]
+        self.assertEqual(len(results),1)
+        self.assertEqual(len(results[0][1]),1)
+        self.assertIn('最终结果',results[0][1][0].text)
+        self.assertIn('曲线图片暂时无法读取',results[0][1][0].text)

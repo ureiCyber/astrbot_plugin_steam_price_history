@@ -9,6 +9,7 @@ import astrbot.api.message_components as Comp
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .price_history.itad import ITADClient, ITADError
+from .price_history.media import prepare_image
 from .price_history.query import QueryError
 from .price_history.service import PriceService
 from .price_history.steam import SteamStore
@@ -71,7 +72,14 @@ class SteamPriceHistoryPlugin(Star):
             image, text = await self.service.query(query)
             chain = []
             if image:
-                chain.append(Comp.Image.fromFileSystem(str(image)))
+                try:
+                    # Eager encoded bytes outlive the disposable chart cache;
+                    # never hand a delayed local-file read to the adapter.
+                    payload = await asyncio.to_thread(prepare_image, image)
+                    chain.append(Comp.Image.fromBytes(payload))
+                except (OSError, ValueError) as exc:
+                    logger.warning(f'Steam price chart preparation failed ({type(exc).__name__}); sending text only.')
+                    text += '\n曲线图片暂时无法读取，已保留价格结果。' 
             chain.append(Comp.Plain(text))
             yield event.chain_result(chain)
         except (QueryError, ITADError) as exc:
@@ -89,3 +97,4 @@ class SteamPriceHistoryPlugin(Star):
         if self.service:
             await self.service.close()
             self.service = None
+

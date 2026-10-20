@@ -204,7 +204,7 @@ def render_history_chart(
     font_families: Sequence[str] | str | None = None,
     font_path: str | Path | None = None,
     background_path: str | Path | None = None,
-    attribution: str = "Source: IsThereAnyDeal | Steam store only",
+    attribution: str = "",
 ) -> Path:
     """Save a PNG chart and return its path; no network or global backend use.
 
@@ -233,10 +233,8 @@ def render_history_chart(
                 stacklevel=2,
             )
             display_title = "Steam price history"
-        if not _font_covers(attribution, font):
-            attribution = "Source: IsThereAnyDeal | Steam store only"
         currencies = series.currencies or ("Price",)
-        figure = Figure(figsize=(11, 3.8 + 1.8 * len(currencies)), dpi=140, facecolor="#111827")
+        figure = Figure(figsize=(10.8, 4.2 + 1.8 * len(currencies)), dpi=100, facecolor="#111827")
         FigureCanvasAgg(figure)
         if background_path:
             # The service supplies a bounded, locally downloaded official cover.
@@ -244,7 +242,7 @@ def render_history_chart(
             try:
                 from PIL import Image, ImageOps
                 with Image.open(Path(background_path)) as cover:
-                    cover = ImageOps.fit(cover.convert("RGB"), (1540, int(figure.get_figheight() * 140)))
+                    cover = ImageOps.fit(cover.convert("RGB"), (1080, int(figure.get_figheight() * 100)))
                     background = figure.add_axes([0, 0, 1, 1], zorder=-10)
                     background.imshow(cover, aspect="auto", alpha=0.35)
                     background.set_axis_off()
@@ -296,7 +294,8 @@ def render_history_chart(
         if fallback:
             note += " CJK title omitted: configure a CJK font."
         figure.text(0.075, 0.064, note, fontsize=8, color="#94a3b8", fontproperties=font)
-        figure.text(0.075, 0.032, attribution, fontsize=8, color="#94a3b8", fontproperties=font)
+        if attribution:
+            figure.text(0.075, 0.032, attribution, fontsize=8, color="#94a3b8", fontproperties=font)
         figure.subplots_adjust(left=0.075, right=0.975, top=0.86, bottom=0.15, hspace=0.38)
         figure.savefig(path, format="png", facecolor=figure.get_facecolor())
         figure.clear()
@@ -425,33 +424,56 @@ def format_price_summary(summary: Mapping[str, Any]) -> str:
     for warning in extra_warnings:
         if warning:
             lines.append(f"提示：{_clean(warning, 500)}")
-    lines.append("来源：IsThereAnyDeal；史低仅指 Steam 历史最低（已收录记录），不代表跨商店最低价。不同币种不换算，缺失价格不视为免费。")
     return "\n".join(lines)
 
 
+def candidate_kind(candidate: Mapping[str, Any]) -> str:
+    """Classify only from metadata, never from a word in a game's name."""
+    kind = str(candidate.get("type") or "").casefold()
+    ids = candidate.get("shop_ids") or []
+    if isinstance(ids, str):
+        ids = [ids]
+    ids = list(ids) + [candidate.get("shop_id") or ""]
+    bundles = any(str(ident).startswith("bundle/") for ident in ids)
+    apps = any(str(ident).startswith("app/") for ident in ids)
+    if kind == "bundle" or (bundles and not apps):
+        return "bundle"
+    if kind in {"game", "dlc"} or apps or candidate.get("appid") or candidate.get("steam_appid"):
+        return "game"
+    return "unknown"
+
+
 def format_candidates(candidates: Sequence[Mapping[str, Any]], *, query: str = "", limit: int = 8) -> str:
-    """List alternatives after an automatic first-result lookup."""
-    if not candidates:
-        return "没有找到匹配的 Steam 游戏。请尝试英文名、Steam AppID 或 Steam /app/ 链接。"
-    unique, seen_ids, seen_titles = [], set(), set()
+    """Separate verified bundles from similar games; no membership claim."""
+    groups = {"game": [], "bundle": [], "unknown": []}
+    seen_ids, seen_titles = set(), set()
     for candidate in candidates:
         if not isinstance(candidate, Mapping):
             continue
         ident = candidate.get("id") or candidate.get("appid") or candidate.get("steam_appid")
         title_key = _clean(candidate.get("title") or candidate.get("name")).casefold()
-        if (ident is not None and str(ident) in seen_ids) or (title_key and title_key in seen_titles):
+        kind = candidate_kind(candidate)
+        # Equal names across different product types are not duplicates.
+        title_identity = (kind, title_key)
+        if (ident is not None and str(ident) in seen_ids) or (title_key and title_identity in seen_titles):
             continue
-        unique.append(candidate)
+        groups[kind].append(candidate)
         if ident is not None:
             seen_ids.add(str(ident))
         if title_key:
-            seen_titles.add(title_key)
-    lines = ["还有其他类似名字的游戏："]
-    for index, candidate in enumerate(unique[:max(1, limit)], start=1):
-        title = _clean(candidate.get("title") or candidate.get("name") or "未命名游戏")
-        appid = candidate.get("appid") or candidate.get("steam_appid")
-        suffix = f" · AppID {appid}" if str(appid).isdecimal() else ""
-        lines.append(f"{index}. {title}{suffix}")
-    if len(unique) > max(1, limit):
-        lines.append("还有其他结果，请缩小游戏名范围。")
-    return "\n".join(lines)
+            seen_titles.add(title_identity)
+    sections = []
+    labels = {"game": "还有其他类似名字的游戏：", "bundle": "名称相关的捆绑包（不计入本体史低）：", "unknown": "类型尚未确认的相关条目："}
+    for kind, items in groups.items():
+        if not items:
+            continue
+        lines = [labels[kind]]
+        for index, candidate in enumerate(items[:max(1, limit)], start=1):
+            title = _clean(candidate.get("title") or candidate.get("name") or "未命名条目")
+            appid = candidate.get("appid") or candidate.get("steam_appid")
+            suffix = f" · AppID {appid}" if kind == "game" and str(appid).isdecimal() else ""
+            lines.append(f"{index}. {title}{suffix}")
+        if len(items) > max(1, limit):
+            lines.append("还有其他结果，请缩小游戏名范围。")
+        sections.append("\n".join(lines))
+    return "\n\n".join(sections)

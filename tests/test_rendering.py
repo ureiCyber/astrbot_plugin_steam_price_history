@@ -111,7 +111,8 @@ class TextRenderingTests(unittest.TestCase):
         self.assertIn("黄金版", text)
         self.assertIn("国区价格: ¥50.00 -50%", text)
         self.assertIn("史低: ¥40.00 -60%", text)
-        self.assertIn("Steam 历史最低", text)
+        self.assertNotIn("来源：", text)
+        self.assertNotIn("IsThereAnyDeal", text)
         self.assertNotIn("全店", text)
         self.assertIn("2026-05-01", text)
         self.assertIn("数据获取时间", text)
@@ -199,6 +200,9 @@ class ChartRenderingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = render_history_chart([], Path(temporary) / "chart.png", title="No Data", now=NOW)
             self.assertTrue(path.exists())
+            from PIL import Image
+            with Image.open(path) as image:
+                self.assertEqual(image.size, (1080, 600))
 
     def test_local_cover_background_renders(self):
         from PIL import Image
@@ -230,3 +234,27 @@ class ChartRenderingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BundleFormattingTests(unittest.TestCase):
+    def test_separate_bundle_section_and_dedupe(self):
+        text=format_candidates([
+            {'id':'g','title':'Bundle of Joy','type':'game'},
+            {'id':'b','title':'Collection','type':'bundle'},
+            {'id':'b','title':'Collection duplicate','type':'bundle'},
+            {'id':'c','title':'collection','shop_id':'bundle/10'},
+        ])
+        game_section,bundle_section=text.split('名称相关的捆绑包')
+        self.assertIn('Bundle of Joy',game_section)
+        self.assertNotIn('Collection',game_section)
+        self.assertEqual(bundle_section.count('Collection'),1)
+        self.assertNotIn('duplicate',text)
+    def test_empty_sections_omitted(self):
+        self.assertEqual(format_candidates([]),'')
+        text=format_candidates([{'title':'Pack','type':'bundle'}])
+        self.assertNotIn('还有其他类似名字的游戏',text)
+        self.assertNotIn('类型尚未确认',text)
+    def test_explicit_game_type_beats_title_word(self):
+        text=format_candidates([{'title':'My Bundle Game','type':'game'}])
+        self.assertIn('还有其他类似名字的游戏',text)
+        self.assertNotIn('捆绑包',text)

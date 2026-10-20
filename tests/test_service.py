@@ -175,3 +175,87 @@ class QueryFlowTests(unittest.IsolatedAsyncioTestCase):
         await self.service.refresh('base','CN',force=True)
         last=[c for c in self.client.calls if c[0]=='history'][-1]
         self.assertLessEqual(datetime.fromisoformat(last[-1]).timestamp(),1_000_000)
+
+
+class BundleCandidateTests(unittest.IsolatedAsyncioTestCase):
+    asyncSetUp = QueryFlowTests.asyncSetUp
+    asyncTearDown = QueryFlowTests.asyncTearDown
+    async def test_null_type_bundle_is_batched_classified_and_cached(self):
+        calls=[]
+        async def search(title):
+            return [{'id':'bundle','title':'Example Pack','type':None},
+                    {'id':'base','title':'Example Game','type':'game'},
+                    {'id':'other','title':'Bundle of Joy','type':'game'}]
+        async def shop_ids(ids):
+            calls.append(ids)
+            return {'bundle':['bundle/77']}
+        self.client.search=search
+        self.client.shop_ids=shop_ids
+        _,text=await self.service.query('Example')
+        games=text.split('还有其他类似名字的游戏：')[1].split('名称相关的捆绑包')[0]
+        self.assertIn('Bundle of Joy',games)
+        self.assertNotIn('Example Pack',games)
+        self.assertIn('名称相关的捆绑包',text)
+        self.assertEqual(calls,[['bundle']])
+        self.assertNotIn('bundle',[c[1] for c in self.client.calls if c[0] in ('price','history')])
+        await self.service.query('Example')
+        self.assertEqual(len(calls),1)
+
+    async def test_only_bundles_do_not_trigger_price_query(self):
+        from price_history.query import QueryError
+        async def search(title): return [{'id':'bundle','title':'Example Pack','type':'bundle'}]
+        self.client.search=search
+        with self.assertRaises(QueryError) as raised:
+            await self.service.query('Example')
+        self.assertIn('名称相关的捆绑包',str(raised.exception))
+        self.assertFalse(self.client.calls)
+
+    async def test_unconfirmed_type_not_mislabelled_game(self):
+        async def search(title): return [{'id':'base','title':'Example','type':'game'}, {'id':'unknown','title':'Mystery'}]
+        original=self.client.info
+        async def info(ident):
+            return {'id':'unknown','title':'Mystery'} if ident=='unknown' else await original(ident)
+        self.client.search=search
+        self.client.info=info
+        _,text=await self.service.query('Example')
+        self.assertIn('类型尚未确认的相关条目',text)
+        self.assertNotIn('还有其他类似名字的游戏',text)
+
+    async def test_bundle_discovery_never_becomes_edition(self):
+        async def discover(appid,country):
+            return [{'edition':'deluxe','title':'Bundle','shop_id':'bundle/99','current':D}]
+        self.service.steam.discover=discover
+        _,text=await self.service.query('123')
+        self.assertNotIn('版本对比',text)
+        self.assertNotIn('Bundle',text)
+
+    async def test_info_fallback_and_old_resolve_cache_ignored(self):
+        self.store.cache_put('resolve:Example', [{'id':'old','title':'Old'}], 9999999999)
+        async def search(title): return [{'id':'base','title':'Example','type':'game'}, {'id':'bundle','title':'Pack'}]
+        async def shop_ids(ids): raise ITADError('unavailable')
+        original = self.client.info
+        calls = []
+        async def info(ident):
+            calls.append(ident)
+            return {'id':'bundle','title':'Pack','type':'bundle'} if ident == 'bundle' else await original(ident)
+        self.client.search = search
+        self.client.shop_ids = shop_ids
+        self.client.info = info
+        _, text = await self.service.query('Example')
+        self.assertIn('名称相关的捆绑包', text)
+        self.assertNotIn('Old', text)
+        await self.service.query('Example')
+        self.assertEqual(calls.count('bundle'), 1)
+
+    async def test_failed_classification_keeps_base_response(self):
+        async def search(title): return [{'id':'base','title':'Example','type':'game'}, {'id':'unknown','title':'Mystery'}]
+        original = self.client.info
+        async def info(ident):
+            if ident == 'unknown': raise ITADError('unavailable')
+            return await original(ident)
+        self.client.search = search
+        self.client.info = info
+        _, text = await self.service.query('Example')
+        self.assertIn('Example Game', text)
+        self.assertIn('类型尚未确认', text)
+        self.assertNotIn('还有其他类似名字的游戏', text)

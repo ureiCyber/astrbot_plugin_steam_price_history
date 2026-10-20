@@ -114,3 +114,13 @@ python -m unittest discover -s tests -v
 - [AstrBot 消息发送](https://docs.astrbot.app/dev/star/guides/send-message.html)
 - [AstrBot 插件存储](https://docs.astrbot.app/dev/star/guides/storage.html)
 - [IsThereAnyDeal API](https://docs.isthereanydeal.com/)
+
+
+## v0.1.1 图片兼容性修正
+
+- 默认单币种曲线为 1080×600，发送前转为 RGB JPEG，文件不超过 450 KiB，保留封面背景和月度刻度。
+- 使用 AstrBot 的 `Image.fromBytes` 提前固定图片内容，不再依赖插件缓存文件在延迟发送时仍存在。损坏或丢失图片时仍返回价格文字。
+- 去掉回复和默认图表中的来源提示；数据来源、范围及致谢仍在本文保留。史低只针对 Steam 已收录记录，不代表跨商店最低；不同币种不换算，缺失价格不视为免费。
+- 同名候选中的已确认捆绑包独立列出，不再混入其他类似名字的游戏，也不当作本体或版本价格。名称相关不代表已经确认包含当前游戏。
+
+“图片已过期”也可能来自 QQ 协议端的上传或消息缓存，不能仅凭占位图确定原因。本次验证了图片解码、体积上限和 AstrBot 字节组件调用；未连接真实 QQ/NapCat 环境。如果更新后小图仍失败，请核对 AstrBot 与协议端版本，并查看发送当时的图片上传错误日志（分享前删除密钥和账号隐私）。

@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from .itad import ITADError
 from .query import parse_query, QueryError
-from .rendering import render_history_chart, format_price_summary, format_candidates
+from .rendering import render_history_chart, format_price_summary, format_candidates, candidate_kind
 from .storage import Store
 
 UTC = timezone.utc
@@ -89,7 +89,8 @@ class PriceService:
         return info
 
     async def resolve(self, query):
-        key = f'resolve:{query.appid or query.title}'
+        # Version the cache: earlier releases discarded bundles before caching.
+        key = f'resolve:v2:{query.appid or query.title}'
         cached = self.store.cache_get(key, self.clock())
         if cached is None:
             if query.appid:
@@ -97,13 +98,34 @@ class PriceService:
                 candidates = [item] if item else []
             else:
                 candidates = await self.client.search(query.title)
-            # Do not silently show bundles as games.
-            candidates = [c for c in candidates if c.get('type') != 'bundle']
+            candidates = [dict(c) for c in candidates[:8]]
+            unknown = [c for c in candidates if candidate_kind(c) == 'unknown']
+            # One bounded batch identifies Steam bundle products even when ITAD
+            # search has type=null. Never infer a product type from its title.
+            shop_ids = {}
+            if unknown and hasattr(self.client, 'shop_ids'):
+                try:
+                    shop_ids = await self.client.shop_ids([c['id'] for c in unknown])
+                except ITADError:
+                    pass
+            for candidate in unknown:
+                candidate['shop_ids'] = shop_ids.get(candidate['id'], [])
+                if candidate_kind(candidate) == 'unknown':
+                    try:
+                        details = await self.info(candidate['id'])
+                        candidate.update({k: details[k] for k in ('type', 'appid') if details.get(k) is not None})
+                    except ITADError:
+                        pass
             if not candidates:
                 raise QueryError('未找到该游戏，请检查名称或输入 Steam 商店链接。')
             cached = candidates
             self.store.cache_put(key, cached, self.clock() + 86400)
-        return await self.info(cached[0]['id']), cached[1:]
+        games = [c for c in cached if candidate_kind(c) == 'game']
+        if not games:
+            raise QueryError('未找到已确认的游戏本体，请输入 Steam AppID 或 /app/ 链接。\n\n' + format_candidates(cached))
+        selected = games[0]
+        base = await self.info(selected['id'])
+        return base, [c for c in cached if c['id'] != selected['id']]
 
     async def editions(self, base, country):
         appid = base.get('appid')
@@ -126,7 +148,9 @@ class PriceService:
                     warnings.append('Steam 版本识别暂时失败，本次仅显示已确认的数据。')
                 else:
                     raise
-        found = [dict(row) for row in found]
+        found = [dict(row) for row in found
+                 if row.get('shop_id', '').startswith(('app/', 'sub/'))
+                 and candidate_kind(row) != 'bundle']
         # Exact administrator-verified relation, never a fuzzy title equivalence.
         for edition, entry in self.mappings.get(str(appid), {}).items():
             if not isinstance(entry, dict):
@@ -332,7 +356,7 @@ class PriceService:
             cover = (await self.steam.cover(int(base['appid']), query.country, self.directory / 'covers')
                 if base.get('appid') and hasattr(self.steam, 'cover') else None)
             cover_stamp = cover.stat().st_mtime_ns if cover else None
-            identity = json.dumps([rows, selected['title'], query.country, iso(self.clock())[:10],
+            identity = json.dumps(['compact-v2', rows, selected['title'], query.country, iso(self.clock())[:10],
                 cover_stamp, self.config.get('chart_fonts', '')], sort_keys=True)
             digest = hashlib.sha256(identity.encode()).hexdigest()[:24]
             chart = self.directory / f'chart_{digest}.png'
@@ -395,3 +419,4 @@ class PriceService:
         await self.client.close()
         await self.steam.close()
         self.store.close()
+
