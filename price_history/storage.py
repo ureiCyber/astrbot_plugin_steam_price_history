@@ -11,6 +11,10 @@ class Store:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(self.path)
+        version = self.db.execute('PRAGMA user_version').fetchone()[0]
+        if version > 1:
+            self.db.close()
+            raise ValueError('数据库由较新版本创建，请勿用旧插件覆盖。')
         self.db.execute('PRAGMA journal_mode=WAL')
         self.db.execute('PRAGMA busy_timeout=5000')
         self.db.executescript('''
@@ -21,7 +25,7 @@ class Store:
                 game_id TEXT NOT NULL, country TEXT NOT NULL,
                 fingerprint TEXT NOT NULL, timestamp TEXT NOT NULL,
                 payload TEXT NOT NULL,
-                PRIMARY KEY(game_id,country,fingerprint));
+                PRIMARY KEY(game_id,country,timestamp));
             CREATE INDEX IF NOT EXISTS history_time ON history(game_id,country,timestamp);
             CREATE TABLE IF NOT EXISTS cache (
                 key TEXT PRIMARY KEY, expires REAL NOT NULL, payload TEXT NOT NULL);
@@ -49,7 +53,7 @@ class Store:
             for row in entries:
                 serialized = json.dumps(row, sort_keys=True, ensure_ascii=False)
                 fingerprint = hashlib.sha256(serialized.encode()).hexdigest()
-                self.db.execute('INSERT OR IGNORE INTO history VALUES(?,?,?,?,?)',
+                self.db.execute('INSERT INTO history VALUES(?,?,?,?,?) ON CONFLICT(game_id,country,timestamp) DO UPDATE SET fingerprint=excluded.fingerprint,payload=excluded.payload WHERE history.fingerprint != excluded.fingerprint',
                     (game_id, country, fingerprint, row['timestamp'], serialized))
         return self.db.total_changes - old
 

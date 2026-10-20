@@ -25,3 +25,13 @@ class StorageTests(unittest.TestCase):
             self.assertEqual(s.cache_get('x',99),{'a':1})
             self.assertIsNone(s.cache_get('x',100))
             s.close()
+
+    def test_corrected_timestamp_replaces_old_price(self):
+        with tempfile.TemporaryDirectory() as d:
+            s=Store(Path(d)/'db')
+            for amount in [10,20]:
+                s.merge_history('a','CN',[{'timestamp':'2026-01-01T00:00:00+00:00','deal':{'price':{'amount':amount,'currency':'CNY'}}}])
+            rows=s.history('a','CN')
+            self.assertEqual(len(rows),1)
+            self.assertEqual(rows[0]['deal']['price']['amount'],20)
+            s.close()

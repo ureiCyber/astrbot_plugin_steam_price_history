@@ -1,0 +1,43 @@
+{
+  "itad_api_key": {
+    "description": "IsThereAnyDeal API Key",
+    "type": "string",
+    "hint": "在 isthereanydeal.com 的 Apps 页面申请。不要发到群聊或提交到 GitHub。",
+    "default": ""
+  },
+  "active_days": {
+    "description": "活跃保留天数",
+    "type": "int",
+    "hint": "最近查询的游戏和地区在此期间每日检查；过期仅停止更新，不删除历史。",
+    "default": 3
+  },
+  "daily_time": {
+    "description": "每日批量检查时间（北京时间）",
+    "type": "string",
+    "hint": "HH:MM，重启后若已过当天时间会补执行一次，不主动发消息。",
+    "default": "09:00"
+  },
+  "cache_hours": {
+    "description": "查询现价缓存小时数",
+    "type": "int",
+    "default": 24
+  },
+  "edition_aliases": {
+    "description": "额外版本别名（JSON）",
+    "type": "text",
+    "hint": "例如 {\"周年版\":\"anniversary\"}；需配合已确认的版本映射。",
+    "default": "{}"
+  },
+  "edition_mappings": {
+    "description": "精确购买版本映射（JSON）",
+    "type": "text",
+    "hint": "以本体 AppID 为键，值为版本对象，例如 {\"123\":{\"deluxe\":{\"shop_id\":\"sub/456\",\"title\":\"豪华版\",\"upgrade\":false}}}。仅填写你核对过的同游戏购买项，禁止 bundle。",
+    "default": "{}"
+  },
+  "chart_fonts": {
+    "description": "图表字体（可选）",
+    "type": "string",
+    "default": "",
+    "hint": "逗号分隔的已安装字体名，例如 Noto Sans CJK SC；留空自动查找。无中文字体时明确显示英文降级图，不输出乱码。"
+  }
+}
